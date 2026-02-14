@@ -618,14 +618,32 @@ details.event-row[data-type="expense"] .summary-amount {
     .api-input-row {
         flex-direction: column;
         gap: 10px;
+        width: 100%;
+        /* Ensure container doesn't overflow */
+    }
+
+    .large-input {
+        flex: 1;
+        padding: 12px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        width: 100%;
+        /* Force full width */
+        box-sizing: border-box;
+        /* Ensure padding doesn't add to width */
     }
 
     .ai-btn {
         width: 100%;
         /* Full width button */
+        box-sizing: border-box;
+        /* Create safety against padding overflow */
         justify-content: center;
         display: flex;
         align-items: center;
+        margin: 0;
+        /* Remove potential margins */
     }
 
     /* Fix Event Summary text visibility */
