@@ -893,3 +893,58 @@ details.event-row[data-type="expense"] .summary-amount {
         opacity: 1;
     }
 }
+
+/* Phase 26: Unified Button */
+.tab-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background: #f1f1f1;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.tab-button.active {
+    background: #3498db;
+    color: white;
+}
+
+.update-btn {
+    margin-left: auto;
+    /* Push to the right */
+    background-color: #e67e22;
+    /* Orange for action */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.update-btn:hover {
+    background-color: #d35400;
+}
+
+@media (max-width: 600px) {
+    .update-btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+}

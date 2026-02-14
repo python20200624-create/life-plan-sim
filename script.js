@@ -1,4 +1,4 @@
-// Debug log to confirm script execution
+﻿// Debug log to confirm script execution
 console.log('Script loaded v3');
 
 // --- Phase 4(5): Education Cost Constants ---
@@ -939,10 +939,12 @@ function switchTab(tabName) {
     }
 
     // Activate target button
+    // Updated to support 4 tabs
     const buttons = document.querySelectorAll('.tab-button');
     if (tabName === 'input' && buttons[0]) buttons[0].classList.add('active');
     if (tabName === 'life-events' && buttons[1]) buttons[1].classList.add('active');
     if (tabName === 'result' && buttons[2]) buttons[2].classList.add('active');
+    if (tabName === 'data-settings' && buttons[3]) buttons[3].classList.add('active');
 }
 
 // Help Modal Logic (Phase 17)
@@ -975,6 +977,259 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === helpModal) {
                 helpModal.style.display = 'none';
             }
+        });
+    }
+});
+
+// Phase 26: Unified Button Handling
+document.addEventListener('DOMContentLoaded', () => {
+    const simBtn = document.getElementById('simulate-btn');
+    if (simBtn) {
+        simBtn.addEventListener('click', () => {
+            // Ensure we switch to result tab to see the output
+            switchTab('result');
+        });
+    }
+
+});
+
+// --- Phase 40: Data Persistence (Save/Load) ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Buttons
+    const saveLocalBtn = document.getElementById('save-local-btn');
+    const loadLocalBtn = document.getElementById('load-local-btn');
+    const clearLocalBtn = document.getElementById('clear-local-btn');
+    const exportFileBtn = document.getElementById('export-file-btn');
+    const importFileBtn = document.getElementById('import-file-btn');
+    const importFileInput = document.getElementById('import-file-input');
+
+    // 1. Collect Data Function
+    const getAllData = () => {
+        // Form Inputs
+        const formData = {
+            ageSelf: document.getElementById('age-self').value,
+            maritalStatus: document.getElementById('marital-status').value,
+            housingStatus: document.getElementById('housing-status').value,
+            familyCare: document.getElementById('family-care').value,
+            housingStrategy: document.querySelector('input[name="housing-strategy"]:checked')?.value || 'rental',
+            childCount: document.getElementById('child-count').value,
+            futureChildren: document.getElementById('future-children-plan').value,
+            // Children Details
+            ageChild1: document.getElementById('age-child-1').value,
+            courseChild1: document.getElementById('course-child-1').value,
+            ageChild2: document.getElementById('age-child-2').value,
+            courseChild2: document.getElementById('course-child-2').value,
+            // Financials
+            householdIncome: document.getElementById('household-income').value,
+            annualExpenses: document.getElementById('annual-expenses').value,
+            initialCash: document.getElementById('initial-cash').value,
+            initialInvestment: document.getElementById('initial-investment').value,
+            annualInvestmentCap: document.getElementById('annual-investment-cap').value,
+            returnRate: document.getElementById('return-rate').value,
+            retirementAge: document.getElementById('retirement-age').value,
+            retirementAllowance: document.getElementById('retirement-allowance').value,
+            // Extra risks
+            carOwnership: document.getElementById('car-ownership').value,
+            parentsHome: document.getElementById('parents-home').value
+        };
+
+        // Life Events
+        const events = [];
+        document.querySelectorAll('.event-row').forEach(row => {
+            const name = row.querySelector('.event-name').value;
+            const age = row.querySelector('.event-age').value;
+            const endAgeInput = row.querySelector('.event-age-end');
+            const endAge = endAgeInput ? endAgeInput.value : '';
+            const type = row.querySelector('.event-type').value;
+            const mode = row.querySelector('.event-mode').value;
+            const amount = row.querySelector('.event-amount').value;
+
+            // Only add if basic data exists
+            if (name && age && amount) {
+                events.push({ name, age, endAge, type, mode, amount });
+            }
+        });
+
+        // Combine
+        return {
+            meta: {
+                version: '1.0',
+                savedAt: new Date().toISOString()
+            },
+            profile: formData,
+            events: events
+        };
+    };
+
+    // 2. Restore Data Function
+    const restoreData = (data) => {
+        if (!data || !data.profile) {
+            alert('有効なデータが見つかりませんでした。');
+            return;
+        }
+
+        try {
+            // Restore Profile
+            const p = data.profile;
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && val !== undefined) el.value = val;
+            };
+
+            setVal('age-self', p.ageSelf);
+            if (document.getElementById('marital-status')) document.getElementById('marital-status').value = p.maritalStatus;
+
+            setVal('housing-status', p.housingStatus);
+            setVal('family-care', p.familyCare);
+
+            // Radio button
+            if (p.housingStrategy) {
+                const radio = document.querySelector(`input[name="housing-strategy"][value="${p.housingStrategy}"]`);
+                if (radio) radio.checked = true;
+            }
+
+            setVal('child-count', p.childCount);
+            // Trigger change event to show/hide child inputs
+            document.getElementById('child-count').dispatchEvent(new Event('change'));
+
+            setVal('future-children-plan', p.futureChildren);
+            setVal('age-child-1', p.ageChild1);
+            setVal('course-child-1', p.courseChild1);
+            setVal('age-child-2', p.ageChild2);
+            setVal('course-child-2', p.courseChild2);
+
+            setVal('household-income', p.householdIncome);
+            setVal('annual-expenses', p.annualExpenses);
+            setVal('initial-cash', p.initialCash);
+            setVal('initial-investment', p.initialInvestment);
+            setVal('annual-investment-cap', p.annualInvestmentCap);
+            setVal('return-rate', p.returnRate);
+            setVal('retirement-age', p.retirementAge);
+            setVal('retirement-allowance', p.retirementAllowance);
+
+            setVal('car-ownership', p.carOwnership);
+            setVal('parents-home', p.parentsHome);
+
+
+            // Restore Events
+            const eventsContainer = document.getElementById('life-events-container');
+            if (eventsContainer && data.events) {
+                eventsContainer.innerHTML = ''; // Clear current
+
+                data.events.forEach(evt => {
+                    const btn = document.getElementById('add-event-btn');
+                    if (btn) btn.click();
+                    const newRow = eventsContainer.lastElementChild; // The one just added
+                    if (newRow) {
+                        // Populate inputs
+                        newRow.querySelector('.event-name').value = evt.name;
+                        newRow.querySelector('.event-age').value = evt.age;
+                        newRow.querySelector('.event-type').value = evt.type;
+                        newRow.querySelector('.event-mode').value = evt.mode;
+                        newRow.querySelector('.event-amount').value = evt.amount;
+
+                        const endAgeIn = newRow.querySelector('.event-age-end');
+                        if (endAgeIn && evt.endAge) endAgeIn.value = evt.endAge;
+
+                        // Trigger events to update UI
+                        newRow.querySelector('.event-name').dispatchEvent(new Event('input'));
+                        newRow.querySelector('.event-mode').dispatchEvent(new Event('change'));
+
+                        // Close details to keep it tidy
+                        newRow.open = false;
+                    }
+                });
+            }
+
+            alert('データを読み込みました！');
+
+        } catch (e) {
+            console.error(e);
+            alert('データの読み込み中にエラーが発生しました: ' + e.message);
+        }
+    };
+
+    // 3. Event Listeners
+
+    // LocalStorage Save
+    if (saveLocalBtn) {
+        saveLocalBtn.addEventListener('click', () => {
+            try {
+                const data = getAllData();
+                localStorage.setItem('lifePlanData', JSON.stringify(data));
+                alert('ブラウザにデータを保存しました。');
+            } catch (e) {
+                alert('保存に失敗しました: ' + e.message);
+            }
+        });
+    }
+
+    // LocalStorage Load
+    if (loadLocalBtn) {
+        loadLocalBtn.addEventListener('click', () => {
+            const json = localStorage.getItem('lifePlanData');
+            if (json) {
+                if (confirm('現在の入力内容は上書きされます。よろしいですか？')) {
+                    restoreData(JSON.parse(json));
+                }
+            } else {
+                alert('保存されたデータが見つかりません。');
+            }
+        });
+    }
+
+    // LocalStorage Clear
+    if (clearLocalBtn) {
+        clearLocalBtn.addEventListener('click', () => {
+            if (confirm('ブラウザに保存されたデータを削除しますか？')) {
+                localStorage.removeItem('lifePlanData');
+                alert('削除しました。');
+            }
+        });
+    }
+
+    // Export File
+    if (exportFileBtn) {
+        exportFileBtn.addEventListener('click', () => {
+            const data = getAllData();
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `life-plan-data_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Import File Button -> Trigger Input
+    if (importFileBtn && importFileInput) {
+        importFileBtn.addEventListener('click', () => {
+            importFileInput.click();
+        });
+
+        importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const json = JSON.parse(event.target.result);
+                    if (confirm('現在の入力内容は上書きされます。よろしいですか？')) {
+                        restoreData(json);
+                    }
+                } catch (err) {
+                    alert('ファイルの読み込みに失敗しました。正しいJSONファイルか確認してください。');
+                }
+                // Reset input
+                importFileInput.value = '';
+            };
+            reader.readAsText(file);
         });
     }
 });
