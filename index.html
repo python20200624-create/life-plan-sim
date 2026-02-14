@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ライフプランシミュレーション</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>ライフプランシミュレーション</h1>
+            <p>現在の状況を入力して、将来の資産推移をシミュレーションしましょう。</p>
+        </header>
+
+        <div class="tab-container">
+            <button class="tab-button active" onclick="switchTab('input')">入力設定</button>
+            <button class="tab-button" onclick="switchTab('life-events')">ライフイベント</button>
+            <button class="tab-button" onclick="switchTab('result')">結果</button>
+        </div>
+
+        <div id="tab-input" class="tab-content active">
+            <form class="simulation-form">
+                <!-- 基本情報セクション -->
+                <section class="form-section">
+                    <h2><i class="icon">👤</i> 基本情報 & ライフスタイル</h2>
+
+                    <div class="input-grid-row">
+                        <div class="input-group">
+                            <label for="age-self">現在の年齢（本人）</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="age-self" placeholder="35" min="0" max="100" value="30">
+                                <span class="unit">歳</span>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="marital-status">配偶者の有無</label>
+                            <select id="marital-status">
+                                <option value="single">独身</option>
+                                <option value="married" selected>既婚（配偶者あり）</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-grid-row">
+                        <div class="input-group">
+                            <label for="housing-status">現在の住まい</label>
+                            <select id="housing-status">
+                                <option value="rental">賃貸</option>
+                                <option value="owned_house">持ち家（戸建て）</option>
+                                <option value="owned_condo">持ち家（マンション）</option>
+                                <option value="company">社宅・寮</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="family-care">将来の介護懸念（親族）</label>
+                            <select id="family-care">
+                                <option value="none">特になし</option>
+                                <option value="possible_5y">5年以内に可能性あり</option>
+                                <option value="possible_10y">10年以内に可能性あり</option>
+                                <option value="likely">強く懸念している</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 住宅取得プラン (Phase 15) -->
+                <section class="form-section">
+                    <h2><i class="icon">🏠</i> 今後の住宅プラン <span class="help-icon"
+                            data-help="将来の住まいについての方針を選択してください。<br>AI提案の際に、この方針に基づいたイベント（頭金・修繕費・更新料など）が提案されます。">?</span>
+                    </h2>
+
+                    <div class="radio-card-group">
+                        <label class="radio-card">
+                            <input type="radio" name="housing-strategy" value="rental" checked>
+                            <div class="card-content">
+                                <span class="card-icon">🏢</span>
+                                <span class="card-title">ずっと賃貸</span>
+                                <span class="card-desc">更新料や住み替えを想定</span>
+                            </div>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="housing-strategy" value="buy_house">
+                            <div class="card-content">
+                                <span class="card-icon">🏡</span>
+                                <span class="card-title">戸建て購入</span>
+                                <span class="card-desc">頭金・ローン・修繕費</span>
+                            </div>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="housing-strategy" value="buy_condo">
+                            <div class="card-content">
+                                <span class="card-icon">🏙️</span>
+                                <span class="card-title">マンション購入</span>
+                                <span class="card-desc">管理費・積立金を考慮</span>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- 家族構成セクション -->
+                <section class="form-section">
+                    <h2><i class="icon">👨‍👩‍👧‍👦</i> 家族構成（子供）</h2>
+                    <div class="input-group">
+                        <label>子供の人数</label>
+                        <select id="child-count">
+                            <option value="0">0人</option>
+                            <option value="1">1人</option>
+                            <option value="2">2人</option>
+                        </select>
+                    </div>
+                    <div id="children-ages">
+                        <div class="input-group" id="child-1-group" style="display: none;">
+                            <label for="age-child-1">第1子の年齢</label>
+                            <input type="number" id="age-child-1" placeholder="例: 5" min="0" max="30">
+                            <select id="course-child-1" style="margin-top: 5px;">
+                                <option value="all_private">すべて私立（デフォルト）</option>
+                                <option value="public_high_private_uni">高校まで公立・大学私立</option>
+                                <option value="all_public">すべて公立</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="child-2-group" style="display: none;">
+                            <label for="age-child-2">第2子の年齢</label>
+                            <input type="number" id="age-child-2" placeholder="例: 2" min="0" max="30">
+                            <select id="course-child-2" style="margin-top: 5px;">
+                                <option value="all_private">すべて私立（デフォルト）</option>
+                                <option value="public_high_private_uni">高校まで公立・大学私立</option>
+                                <option value="all_public">すべて公立</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 資産・家計セクション -->
+                <section class="form-section">
+                    <h2><i class="icon">💰</i> 資産・家計</h2>
+
+                    <div class="input-grid-row">
+                        <div class="input-group">
+                            <label for="household-income">世帯年収（手取り）</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="household-income" placeholder="600" min="0" step="10"
+                                    value="600">
+                                <span class="unit">万円</span>
+                            </div>
+                            <span class="annotation">※ボーナス込みの総額</span>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="annual-expenses">年間支出（概算）</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="annual-expenses" placeholder="450" min="0" step="10"
+                                    value="400">
+                                <span class="unit">万円</span>
+                            </div>
+                            <span class="annotation">※基本生活費 + 住居費 + 教育費など</span>
+                        </div>
+                    </div>
+
+                    <div class="input-grid-row">
+                        <div class="input-group">
+                            <label for="initial-cash">初期・現預金</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="initial-cash" placeholder="300" min="0" step="10" value="300">
+                                <span class="unit">万円</span>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="initial-investment">初期・投資資産</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="initial-investment" placeholder="200" min="0" step="10"
+                                    value="200">
+                                <span class="unit">万円</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- シミュレーション前提 -->
+                <section class="form-section">
+                    <h2><i class="icon">📈</i> シミュレーション前提</h2>
+
+                    <div class="input-grid-row three-col">
+                        <div class="input-group">
+                            <label for="annual-investment-cap">年間投資上限</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="annual-investment-cap" placeholder="120" min="0" step="10"
+                                    value="120">
+                                <span class="unit">万円</span>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="return-rate">想定利回り (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="return-rate" placeholder="3.0" step="0.1" min="0" value="3.0">
+                                <span class="unit">%</span>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="retirement-age">定年退職の年齢</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="retirement-age" placeholder="65" min="60" max="75" value="65">
+                                <span class="unit">歳</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="annotation"
+                        style="margin-top: -10px; display: block; margin-bottom: 10px;">※黒字分は上限まで投資に回し、残りは現預金となります。</span>
+                </section>
+
+                <button type="button" id="simulate-btn" class="primary-btn">シミュレーション実行</button>
+            </form>
+        </div>
+
+        <div id="tab-life-events" class="tab-content">
+            <!-- ライフイベントセクション -->
+            <section class="form-section">
+                <h2><i class="icon">📅</i> ライフイベント (収支変動)</h2>
+
+                <!-- AI Proposal Section -->
+                <div class="api-section">
+                    <div class="api-header">
+                        <label for="gemini-api-key" class="api-label">Google Gemini API Key <span class="help-icon"
+                                data-help="Google AI Studioで取得できるAPIキーを入力してください。<br>安全のため、入力されたキーはブラウザ内に保存されず、再読み込みでクリアされます。<br><a href='https://aistudio.google.com/' target='_blank'>APIキーの取得はこちら</a>">?</span></label>
+                    </div>
+                    <div class="api-input-row">
+                        <input type="password" id="gemini-api-key" class="large-input"
+                            placeholder="APIキーを入力 (AI Studioで取得)">
+                        <button type="button" id="ai-propose-btn" class="ai-btn">
+                            <span class="btn-icon">✨</span> AI提案
+                        </button>
+                    </div>
+                    <div id="ai-loading" style="display:none; color:#2980b9; font-weight:bold; margin-top:10px;">
+                        <span class="spinner">↻</span> AIが思考中...
+                    </div>
+                    <div id="ai-error"
+                        style="display:none; color:#c0392b; font-weight:bold; margin-top:10px; font-size:0.9rem;"></div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+                    <h3 style="margin:0; font-size:1.1rem;">イベントリスト</h3>
+                    <span class="help-icon"
+                        data-help="特定の年齢での収入・支出の増減を設定できます。<br>例: 65歳から住宅ローン完済で支出減、など。<br>リストは自動で年齢順にソートされます。">?</span>
+                </div>
+
+
+                <div id="life-events-container">
+                    <!-- イベント行がここに追加されます -->
+                </div>
+
+                <button type="button" id="add-event-btn" class="secondary-btn" style="margin-top: 10px;">+
+                    イベントを追加</button>
+            </section>
+            <button type="button" class="primary-btn" onclick="switchTab('result'); runSimulation();"
+                style="margin-top: 20px;">シミュレーション実行</button>
+        </div>
+
+        <div id="tab-result" class="tab-content">
+            <!-- 結果表示セクション -->
+            <section id="result-section" style="display: none; margin-top: 40px;">
+                <header style="border-bottom: none; margin-bottom: 20px;">
+                    <h2>シミュレーション結果</h2>
+                    <p>100歳までの資産推移</p>
+                </header>
+
+                <div class="chart-container" style="position: relative; height:40vh; width:100%; margin-bottom: 20px;">
+                    <canvas id="assetChart"></canvas>
+                </div>
+
+                <!-- 破産アラートエリア -->
+                <div id="bankruptcy-alert" style="display: none;"></div>
+
+                <div class="table-container">
+                    <table id="result-table">
+                        <thead>
+                            <tr>
+                                <th>年齢</th>
+                                <th>収入</th>
+                                <th>支出</th>
+                                <th>運用益</th>
+                                <th>現預金</th>
+                                <th>投資資産</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JSで行を追加 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 教育費内訳セクション -->
+                <div id="education-cost-section" style="margin-top: 40px; display: none;">
+                    <h3>🎓 教育費内訳</h3>
+                    <div class="table-container">
+                        <table id="education-cost-table">
+                            <thead>
+                                <tr>
+                                    <th>西暦</th>
+                                    <th>第1子<br>(年齢)</th>
+                                    <th>教育費</th>
+                                    <th>第2子<br>(年齢)</th>
+                                    <th>教育費</th>
+                                    <th>合計</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JSで行を追加 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // 子供の人数に応じて入力欄を表示/非表示にする簡易スクリプト
+        document.getElementById('child-count').addEventListener('change', function () {
+            const count = parseInt(this.value);
+            document.getElementById('child-1-group').style.display = count >= 1 ? 'block' : 'none';
+            document.getElementById('child-2-group').style.display = count >= 2 ? 'block' : 'none';
+        });
+    </script>
+    <!-- Help Modal (Phase 17) -->
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="help-modal-text"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
