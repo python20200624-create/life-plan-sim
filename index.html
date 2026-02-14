@@ -225,83 +225,139 @@
                                 <span class="unit">歳</span>
                             </div>
                         </div>
-                    </div>
-                    <span class="annotation"
-                        style="margin-top: -10px; display: block; margin-bottom: 10px;">※黒字分は上限まで投資に回し、残りは現預金となります。</span>
-                </section>
 
-                <button type="button" id="simulate-btn" class="primary-btn">シミュレーション実行</button>
-            </form>
+                        <div class="input-group">
+                            <label for="retirement-allowance">退職金見込額</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="retirement-allowance" placeholder="1000" min="0" step="10"
+                                    value="1000">
+                                <span class="unit">万円</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phase 25: Extended Risks -->
+                    <div style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px;">
+                        <div class="input-grid-row">
+                            <div class="input-group">
+                                <label>自家用車の保有</label>
+                                <select id="car-ownership">
+                                    <option value="none">なし</option>
+                                    <option value="1_k">軽1台 (予算150万/10年)</option>
+                                    <option value="1_normal">普通車1台 (予算300万/10年)</option>
+                                    <option value="1_luxury">高級車1台 (予算600万/10年)</option>
+                                    <option value="2_mix">2台持ち (普通+軽)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>実家の状況 (相続・介護)</label>
+                                <select id="parents-home">
+                                    <option value="unknown">不明/考慮しない</option>
+                                    <option value="owned_safe">持ち家 (資産価値あり)</option>
+                                    <option value="owned_risk">持ち家 (空き家リスクあり)</option>
+                                    <option value="rental">賃貸 (親の住居費支援の可能性)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
         </div>
+        <span class="annotation"
+            style="margin-top: -10px; display: block; margin-bottom: 10px;">※黒字分は上限まで投資に回し、残りは現預金となります。</span>
+        </section>
 
-        <div id="tab-life-events" class="tab-content">
-            <!-- ライフイベントセクション -->
-            <section class="form-section">
-                <h2><i class="icon">📅</i> ライフイベント (収支変動)</h2>
+        <button type="button" id="simulate-btn" class="primary-btn">シミュレーション実行</button>
+        </form>
+    </div>
 
-                <!-- AI Proposal Section -->
-                <div class="api-section">
-                    <div class="api-header">
-                        <label for="gemini-api-key" class="api-label">Google Gemini API Key <span class="help-icon"
-                                data-help="Google AI Studioで取得できるAPIキーを入力してください。<br>安全のため、入力されたキーはブラウザ内に保存されず、再読み込みでクリアされます。<br><a href='https://aistudio.google.com/' target='_blank'>APIキーの取得はこちら</a>">?</span></label>
-                    </div>
-                    <div class="api-input-row">
-                        <input type="password" id="gemini-api-key" class="large-input"
-                            placeholder="APIキーを入力 (AI Studioで取得)">
-                        <button type="button" id="ai-propose-btn" class="ai-btn">
-                            <span class="btn-icon">✨</span> AI提案
-                        </button>
-                    </div>
-                    <div id="ai-loading" style="display:none; color:#2980b9; font-weight:bold; margin-top:10px;">
-                        <span class="spinner">↻</span> AIが思考中...
-                    </div>
-                    <div id="ai-error"
-                        style="display:none; color:#c0392b; font-weight:bold; margin-top:10px; font-size:0.9rem;"></div>
+    <div id="tab-life-events" class="tab-content">
+        <!-- ライフイベントセクション -->
+        <section class="form-section">
+            <h2><i class="icon">📅</i> ライフイベント (収支変動)</h2>
+
+            <!-- AI Proposal Section -->
+            <div class="api-section">
+                <div class="api-header">
+                    <label for="gemini-api-key" class="api-label">Google Gemini API Key <span class="help-icon"
+                            data-help="Google AI Studioで取得できるAPIキーを入力してください。<br>安全のため、入力されたキーはブラウザ内に保存されず、再読み込みでクリアされます。<br><a href='https://aistudio.google.com/' target='_blank'>APIキーの取得はこちら</a>">?</span></label>
                 </div>
-
-                <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
-                    <h3 style="margin:0; font-size:1.1rem;">イベントリスト</h3>
-                    <span class="help-icon"
-                        data-help="特定の年齢での収入・支出の増減を設定できます。<br>例: 65歳から住宅ローン完済で支出減、など。<br>リストは自動で年齢順にソートされます。">?</span>
+                <div class="api-input-row">
+                    <input type="password" id="gemini-api-key" class="large-input"
+                        placeholder="APIキーを入力 (AI Studioで取得)">
+                    <button type="button" id="ai-propose-btn" class="ai-btn">
+                        <span class="btn-icon">✨</span> AI提案
+                    </button>
                 </div>
-
-
-                <div id="life-events-container">
-                    <!-- イベント行がここに追加されます -->
+                <div id="ai-loading" style="display:none; color:#2980b9; font-weight:bold; margin-top:10px;">
+                    <span class="spinner">↻</span> AIが思考中...
                 </div>
+                <div id="ai-error"
+                    style="display:none; color:#c0392b; font-weight:bold; margin-top:10px; font-size:0.9rem;"></div>
+            </div>
 
-                <button type="button" id="add-event-btn" class="secondary-btn" style="margin-top: 10px;">+
-                    イベントを追加</button>
-            </section>
-            <button type="button" class="primary-btn" onclick="switchTab('result'); runSimulation();"
-                style="margin-top: 20px;">シミュレーション実行</button>
-        </div>
+            <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+                <h3 style="margin:0; font-size:1.1rem;">イベントリスト</h3>
+                <span class="help-icon"
+                    data-help="特定の年齢での収入・支出の増減を設定できます。<br>例: 65歳から住宅ローン完済で支出減、など。<br>リストは自動で年齢順にソートされます。">?</span>
+            </div>
 
-        <div id="tab-result" class="tab-content">
-            <!-- 結果表示セクション -->
-            <section id="result-section" style="display: none; margin-top: 40px;">
-                <header style="border-bottom: none; margin-bottom: 20px;">
-                    <h2>シミュレーション結果</h2>
-                    <p>100歳までの資産推移</p>
-                </header>
 
-                <div class="chart-container" style="position: relative; height:40vh; width:100%; margin-bottom: 20px;">
-                    <canvas id="assetChart"></canvas>
-                </div>
+            <div id="life-events-container">
+                <!-- イベント行がここに追加されます -->
+            </div>
 
-                <!-- 破産アラートエリア -->
-                <div id="bankruptcy-alert" style="display: none;"></div>
+            <button type="button" id="add-event-btn" class="secondary-btn" style="margin-top: 10px;">+
+                イベントを追加</button>
+        </section>
+        <button type="button" class="primary-btn" onclick="switchTab('result'); runSimulation();"
+            style="margin-top: 20px;">シミュレーション実行</button>
+    </div>
 
+    <div id="tab-result" class="tab-content">
+        <!-- 結果表示セクション -->
+        <section id="result-section" style="display: none; margin-top: 40px;">
+            <header style="border-bottom: none; margin-bottom: 20px;">
+                <h2>シミュレーション結果</h2>
+                <p>100歳までの資産推移</p>
+            </header>
+
+            <div class="chart-container" style="position: relative; height:40vh; width:100%; margin-bottom: 20px;">
+                <canvas id="assetChart"></canvas>
+            </div>
+
+            <!-- 破産アラートエリア -->
+            <div id="bankruptcy-alert" style="display: none;"></div>
+
+            <div class="table-container">
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>年齢</th>
+                            <th>収入</th>
+                            <th>支出</th>
+                            <th>運用益</th>
+                            <th>現預金</th>
+                            <th>投資資産</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- JSで行を追加 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 教育費内訳セクション -->
+            <div id="education-cost-section" style="margin-top: 40px; display: none;">
+                <h3>🎓 教育費内訳</h3>
                 <div class="table-container">
-                    <table id="result-table">
+                    <table id="education-cost-table">
                         <thead>
                             <tr>
-                                <th>年齢</th>
-                                <th>収入</th>
-                                <th>支出</th>
-                                <th>運用益</th>
-                                <th>現預金</th>
-                                <th>投資資産</th>
+                                <th>西暦</th>
+                                <th>第1子<br>(年齢)</th>
+                                <th>教育費</th>
+                                <th>第2子<br>(年齢)</th>
+                                <th>教育費</th>
+                                <th>合計</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -309,30 +365,9 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- 教育費内訳セクション -->
-                <div id="education-cost-section" style="margin-top: 40px; display: none;">
-                    <h3>🎓 教育費内訳</h3>
-                    <div class="table-container">
-                        <table id="education-cost-table">
-                            <thead>
-                                <tr>
-                                    <th>西暦</th>
-                                    <th>第1子<br>(年齢)</th>
-                                    <th>教育費</th>
-                                    <th>第2子<br>(年齢)</th>
-                                    <th>教育費</th>
-                                    <th>合計</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- JSで行を追加 -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
+            </div>
+        </section>
+    </div>
     </div>
 
     <script>

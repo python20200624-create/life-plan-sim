@@ -299,7 +299,12 @@ if (addEventBtn && eventsContainer) {
                     housing: document.getElementById('housing-status').value,       // 'rental', 'owned_house', etc.
                     care: document.getElementById('family-care').value,              // 'none', 'possible_5y', etc.
                     housingStrategy: document.querySelector('input[name="housing-strategy"]:checked')?.value || 'rental', // Phase 15
-                    futureChildren: document.getElementById('future-children-plan').value // Phase 24
+                    futureChildren: document.getElementById('future-children-plan').value, // Phase 24
+                    // Phase 25 New Inputs
+                    retirementAge: document.getElementById('retirement-age').value,
+                    retirementAllowance: document.getElementById('retirement-allowance').value,
+                    car: document.getElementById('car-ownership').value,
+                    parentsHome: document.getElementById('parents-home').value
                 };
 
                 const maritalText = (profile.maritalStatus === 'married') ? '既婚（配偶者あり）' : '独身';
@@ -322,10 +327,23 @@ if (addEventBtn && eventsContainer) {
                 if (profile.futureChildren === '2') futureChildrenText = 'あと2人欲しい';
                 if (profile.futureChildren === '3') futureChildrenText = 'あと3人欲しい';
 
-                // 2. Construct Prompt
+                // Phase 25 Texts
+                let carText = 'なし';
+                if (profile.car === '1_k') carText = '軽自動車1台 (150万円/10年更新)';
+                if (profile.car === '1_normal') carText = '普通車1台 (300万円/10年更新)';
+                if (profile.car === '1_luxury') carText = '高級車1台 (600万円/7年更新)';
+                if (profile.car === '2_mix') carText = '2台持ち (普通車+軽自動車)';
+
+                let parentsHomeText = '考慮しない';
+                if (profile.parentsHome === 'owned_safe') parentsHomeText = '実家は持ち家（資産価値あり・相続期待）';
+                if (profile.parentsHome === 'owned_risk') parentsHomeText = '実家は持ち家（古い・空き家管理コストのリスクあり）';
+                if (profile.parentsHome === 'rental') parentsHomeText = '実家は賃貸（将来の住居費支援リスクあり）';
+
+                // 2. Construct Prompt (Phase 25 Robust Version)
                 const prompt = `
-                    あなたは優秀なファイナンシャルプランナーです。
-                    以下のプロフィールの人物に今後発生しうるライフイベント（収入・支出）を詳細に推測し、JSON形式でリストアップしてください。
+                    あなたはプロのファイナンシャルプランナーであり、リスク管理に厳しいシステムエンジニアです。
+                    ユーザーの入力情報を基に、将来発生しうる「ライフイベント（収入・支出）」を網羅的に予測し、JSONデータとしてリストアップしてください。
+                    **楽観的なシナリオは排除し、保守的かつ現実的なリスク（修繕、介護、買い替え）を漏れなく計上してください。**
                     
                     【プロフィール】
                     - 現在年齢: ${profile.age}歳
@@ -333,47 +351,53 @@ if (addEventBtn && eventsContainer) {
                     - 世帯年収: ${profile.income}万円
                     - 現在の住まい: ${housingText}
                     - **今後の住宅プラン: ${strategyText}**
-                    - 現預金: ${profile.cah}万円
-                    - 投資資産: ${profile.asset}万円
-                    - 現在の子供の人数: ${profile.childCount}人
-                    - **今後の家族計画（子供）: ${futureChildrenText}**
-                    - 介護懸念: ${careText}
+                    - 現預金: ${profile.cah}万円 / 投資資産: ${profile.asset}万円
+                    - 定年退職: ${profile.retirementAge}歳
+                    - 退職金見込: ${profile.retirementAllowance}万円
+                    - 子供の人数: ${profile.childCount}人
+                    - **今後の家族計画: ${futureChildrenText}**
+                    - 親族の介護懸念: ${careText}
+                    - **車両保有方針: ${carText}**
+                    - **実家の状況: ${parentsHomeText}**
 
-                    【要件】
-                    1. **最重要: 「今後の住宅プラン」に基づいたイベントを必ず提案すること。**
-                       - 「戸建て購入希望」の場合: 頭金、住宅ローン開始（毎月の支出ではなくイベントとして扱うか、頭金のみか）、修繕費の積み立て、固定資産税など。
-                       - 「マンション購入希望」の場合: 頭金、管理費・修繕積立金の一時負担増、大規模修繕時の負担など。
-                       - 「賃貸継続」の場合: 高齢時の家賃負担など（**注: 2年ごとの更新料は計算に含まなくて良い。提案しないでください。**）
+                    【要件・出力ルール】
+                    以下のカテゴリごとに、漏れなく詳細なイベントを作成してください。
+
+                    1. **住宅リスク (category: housing)**
+                       - **「今後の住宅プラン」に基づき、15年周期の「大規模修繕（150万〜300万）」を必須イベントとして計上すること。**
+                       - 「戸建て購入」: 頭金、ローン開始、修繕費（15年ごと）、固定資産税、火災保険。
+                       - 「マンション購入」: 頭金、修繕積立金の一時金徴収（大規模修繕時）、管理費負担増。
+                       - 「賃貸継続」: 高齢期の家賃負担（更新料は除く）。
+
+                    2. **車両コスト (category: car)**
+                       - プロフィールの「車両保有方針」に基づき、定期的な「買い替え費用（下取り考慮後の純支出）」を計上する。
+                       - 車検費用（2年ごと）は家計等の日常支出に含まれるためイベント化しないが、買い替えはイベントとする。
+
+                    3. **教育費 (category: education)**
+                       - **重要: 「授業料・入学金」はシステムで自動計算されるため、出力しないこと。**
+                       - 出力すべきは「塾代」「夏期講習」「習い事」「私立大の下宿費用・仕送り」「海外留学費用」などのプラスアルファのみ。
+                       - 「今後の家族計画」で子供が増える場合は、その子供分のイベントも追加する。
+
+                    4. **老後・健康リスク (category: medical / care)**
+                       - 定年後の「バリアフリー改修（100万〜）」や「有料老人ホーム入居一時金（300万〜）」などのリスクを年齢に応じて提案する。
+                       - プロフィールの「実家の状況」が「空き家リスク」や「賃貸」の場合、実家の解体費用や親の家賃支援イベントを追加する。
+
+                    5. **楽しみ・その他 (category: leisure / income / other)**
+                       - 定年退職記念旅行（1回のみ、予算大きめ）。
+                       - 「退職金受け取り」は category: income として計上。
                     
-                    2. **「今後の家族計画」を厳守すること。**
-                       - 「これ以上予定なし」の場合: 新たな出産・育児費用は提案しないこと。
-                       - 「あとX人欲しい」の場合: 現在の年齢から現実的なタイミングで出産・教育費などのイベントを追加すること。
-
-                    3. **リタイア後の旅行について**
-                       - 特段の指示がない限り、**「定年退職記念旅行」の1回のみ**提案してください。毎年旅行に行くような過剰な提案は避けること。
-
-                    4. **教育費について**
-                      - 「ずっと賃貸派」の場合: 更新料（数年おき）、ライフステージ変化による住み替え費用、高齢期の家賃など。
-                    - **重要: 教育費（授業料・入学金）はシステムで自動計算されるため、イベントとして出力しないこと。**
-                      - ただし、「塾代」「留学費用」「下宿費用」などのプラスアルファの費用は提案して良い。
-                    - 上記に加え、「家族構成」や「介護懸念」も考慮すること。
-                    - 一般的なライフイベント（車購入、退職金、家族旅行など）も忘れずに。
-                    - 現在年齢より後のイベントであること。
-                    - JSONのみを出力すること。Markdown記法や解説は不要。
-                    - 各イベントは以下のフォーマットに従うこと:
-                    {
-                        "name": "イベント名（例：マイホーム頭金）",
-                        "age": 発生年齢（数値）,
-                        "type": "income" または "expense",
-                        "mode": "onetime"（単発） または "continuous"（永続） または "period"（期間）,
-                        "amount": 金額（万円・数値）,
-                        "endAge": 期間指定の場合のみ終了年齢（数値）
-                    }
-                    
-                    出力例:
+                    【JSON出力フォーマット】
+                    解説やMarkdownは一切不要。以下のJSON配列のみを出力すること。
                     [
-                        {"name": "車買い替え", "age": 40, "type": "expense", "mode": "onetime", "amount": 300},
-                        {"name": "自宅リフォーム", "age": 55, "type": "expense", "mode": "onetime", "amount": 500}
+                        {
+                            "name": "イベント名（例：自宅大規模修繕）",
+                            "age": 発生年齢（数値）,
+                            "category": "housing" | "car" | "education" | "medical" | "leisure" | "income" | "other",
+                            "type": "income" または "expense",
+                            "mode": "onetime"（単発） または "continuous"（永続） または "period"（期間）,
+                            "amount": 金額（万円・数値）,
+                            "endAge": 期間指定の場合のみ終了年齢（数値）
+                        }
                     ]
                 `;
 
