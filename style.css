@@ -693,13 +693,21 @@ details.event-row[data-type="expense"] .summary-amount {
 
 /* Tab UI Styles */
 .tab-container {
-    display: flex;
-    border-bottom: 2px solid #ddd;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    /* 6 columns for 3/2 split */
+    border-bottom: none;
+    /* Remove bottom border as buttons will have their own or wrapper */
     margin-bottom: 20px;
+    gap: 2px;
+    /* Small gap for separation */
+    background-color: #ddd;
+    /* Gap color */
+    padding: 2px;
+    border-radius: 8px;
 }
 
 .tab-button {
-    flex: 1;
     padding: 12px;
     background-color: #f1f1f1;
     border: none;
@@ -708,14 +716,56 @@ details.event-row[data-type="expense"] .summary-amount {
     font-weight: bold;
     color: #555;
     transition: background-color 0.3s, color 0.3s;
+    /* Grid Spans */
+    grid-column: span 2;
+    /* Top row items take 2 cols each (2x3=6) */
 }
 
-.tab-button:first-child {
-    border-top-left-radius: 8px;
+/* Specific Spans */
+.tab-button:nth-child(4) {
+    grid-column: span 3;
+    /* Bottom row items take 3 cols each (3x2=6) */
 }
 
-.tab-button:last-child {
-    border-top-right-radius: 8px;
+#simulate-btn.update-btn {
+    grid-column: span 3;
+    padding: 10px;
+    background-color: #2ecc71;
+    color: white;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+    font-size: 1rem;
+}
+
+#simulate-btn.update-btn:hover {
+    background-color: #27ae60;
+}
+
+/* Border Radius Logic */
+/* Input */
+.tab-button:nth-child(1) {
+    border-top-left-radius: 6px;
+}
+
+/* Result */
+.tab-button:nth-child(3) {
+    border-top-right-radius: 6px;
+}
+
+/* Data */
+.tab-button:nth-child(4) {
+    border-bottom-left-radius: 6px;
+}
+
+/* Update Button */
+#simulate-btn.update-btn {
+    border-bottom-right-radius: 6px;
 }
 
 .tab-button.active {
