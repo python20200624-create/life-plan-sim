@@ -644,6 +644,10 @@ details.event-row[data-type="expense"] .summary-amount {
         align-items: center;
         margin: 0;
         /* Remove potential margins */
+        min-height: 50px;
+        /* Make it taller for easier tapping */
+        font-size: 1.1rem;
+        /* Slightly larger text */
     }
 
     /* Fix Event Summary text visibility */

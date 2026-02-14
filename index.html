@@ -107,13 +107,26 @@
                 <!-- 家族構成セクション -->
                 <section class="form-section">
                     <h2><i class="icon">👨‍👩‍👧‍👦</i> 家族構成（子供）</h2>
-                    <div class="input-group">
-                        <label>子供の人数</label>
-                        <select id="child-count">
-                            <option value="0">0人</option>
-                            <option value="1">1人</option>
-                            <option value="2">2人</option>
-                        </select>
+                    <div class="input-grid-row">
+                        <div class="input-group">
+                            <label>子供の人数 (現在)</label>
+                            <select id="child-count">
+                                <option value="0">0人</option>
+                                <option value="1">1人</option>
+                                <option value="2">2人</option>
+                                <option value="3">3人</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>今後の子供プラン <span class="help-icon"
+                                    data-help="これからの家族計画を選択してください。AIが教育費や養育費の発生を予測します。">?</span></label>
+                            <select id="future-children-plan">
+                                <option value="none">これ以上予定なし</option>
+                                <option value="1">あと1人欲しい</option>
+                                <option value="2">あと2人欲しい</option>
+                                <option value="3">あと3人欲しい</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="children-ages">
                         <div class="input-group" id="child-1-group" style="display: none;">

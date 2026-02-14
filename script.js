@@ -296,11 +296,10 @@ if (addEventBtn && eventsContainer) {
                     cah: document.getElementById('initial-cash').value,
                     asset: document.getElementById('initial-investment').value,
                     childCount: document.getElementById('child-count').value,
-                    // New fields
-                    maritalStatus: document.getElementById('marital-status').value, // 'single' or 'married'
                     housing: document.getElementById('housing-status').value,       // 'rental', 'owned_house', etc.
                     care: document.getElementById('family-care').value,              // 'none', 'possible_5y', etc.
-                    housingStrategy: document.querySelector('input[name="housing-strategy"]:checked')?.value || 'rental' // Phase 15
+                    housingStrategy: document.querySelector('input[name="housing-strategy"]:checked')?.value || 'rental', // Phase 15
+                    futureChildren: document.getElementById('future-children-plan').value // Phase 24
                 };
 
                 const maritalText = (profile.maritalStatus === 'married') ? '既婚（配偶者あり）' : '独身';
@@ -318,6 +317,11 @@ if (addEventBtn && eventsContainer) {
                 if (profile.housingStrategy === 'buy_house') strategyText = '戸建て購入希望';
                 if (profile.housingStrategy === 'buy_condo') strategyText = 'マンション購入希望';
 
+                let futureChildrenText = 'これ以上予定なし';
+                if (profile.futureChildren === '1') futureChildrenText = 'あと1人欲しい';
+                if (profile.futureChildren === '2') futureChildrenText = 'あと2人欲しい';
+                if (profile.futureChildren === '3') futureChildrenText = 'あと3人欲しい';
+
                 // 2. Construct Prompt
                 const prompt = `
                     あなたは優秀なファイナンシャルプランナーです。
@@ -331,13 +335,24 @@ if (addEventBtn && eventsContainer) {
                     - **今後の住宅プラン: ${strategyText}**
                     - 現預金: ${profile.cah}万円
                     - 投資資産: ${profile.asset}万円
-                    - 子供の人数: ${profile.childCount}人
+                    - 現在の子供の人数: ${profile.childCount}人
+                    - **今後の家族計画（子供）: ${futureChildrenText}**
                     - 介護懸念: ${careText}
 
                     【要件】
-                    - **最重要: 「今後の住宅プラン」に基づいたイベントを必ず提案すること。**
-                      - 「戸建て購入希望」の場合: 頭金、住宅ローン開始（毎月の支出ではなくイベントとして扱うか、頭金のみか）、修繕費の積み立て、固定資産税など。
-                      - 「マンション購入希望」の場合: 頭金、管理費・修繕積立金の一時負担増、大規模修繕時の負担など。
+                    1. **最重要: 「今後の住宅プラン」に基づいたイベントを必ず提案すること。**
+                       - 「戸建て購入希望」の場合: 頭金、住宅ローン開始（毎月の支出ではなくイベントとして扱うか、頭金のみか）、修繕費の積み立て、固定資産税など。
+                       - 「マンション購入希望」の場合: 頭金、管理費・修繕積立金の一時負担増、大規模修繕時の負担など。
+                       - 「賃貸継続」の場合: 高齢時の家賃負担など（**注: 2年ごとの更新料は計算に含まなくて良い。提案しないでください。**）
+                    
+                    2. **「今後の家族計画」を厳守すること。**
+                       - 「これ以上予定なし」の場合: 新たな出産・育児費用は提案しないこと。
+                       - 「あとX人欲しい」の場合: 現在の年齢から現実的なタイミングで出産・教育費などのイベントを追加すること。
+
+                    3. **リタイア後の旅行について**
+                       - 特段の指示がない限り、**「定年退職記念旅行」の1回のみ**提案してください。毎年旅行に行くような過剰な提案は避けること。
+
+                    4. **教育費について**
                       - 「ずっと賃貸派」の場合: 更新料（数年おき）、ライフステージ変化による住み替え費用、高齢期の家賃など。
                     - **重要: 教育費（授業料・入学金）はシステムで自動計算されるため、イベントとして出力しないこと。**
                       - ただし、「塾代」「留学費用」「下宿費用」などのプラスアルファの費用は提案して良い。
