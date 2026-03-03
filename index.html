@@ -1,434 +1,594 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ライフプランシミュレーション</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LifePlan Mobile V6 | ライフプラン・シミュレーター</title>
+    <script src="lib/chart.js"></script>
+    <script src="lib/hammer.min.js"></script>
+    <script src="lib/chartjs-plugin-zoom.min.js"></script>
+    <script src="lib/crypto-js.min.js"></script>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>ライフ<br>シミュレーション</h1>
-            <p>現在の状況を入力して、将来の資産推移をシミュレーションしましょう。</p>
+    <div class="app-container">
+        <!-- 📱 Header -->
+        <header class="mobile-header">
+            <div class="logo">
+                <svg class="logo-emoji svg-icon lg" viewBox="0 0 24 24" style="color:var(--primary-color)">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span class="logo-text">LifePlan <small>Mobile V6</small></span>
+            </div>
+            <div class="header-actions">
+                <button id="simulate-btn-header" class="icon-btn primary" title="シミュレーション更新" onclick="runSimulation()">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+                <button id="load-local-btn" class="icon-btn" title="インポート">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                </button>
+                <button id="save-local-btn" class="icon-btn" title="保存">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                </button>
+                <input type="file" id="import-file-input" style="display: none;" accept=".json">
+            </div>
+            <div id="error-message"
+                style="display:none; position:fixed; top:70px; left:20px; right:20px; background:#fee2e2; color:#b91c1c; padding:12px; border-radius:12px; z-index:1000; box-shadow:var(--shadow-lg); font-size:14px; border:1px solid #fecaca;">
+            </div>
         </header>
 
-        <div class="tab-container">
-            <button class="tab-button active" onclick="switchTab('input')">基本情報</button>
-            <button class="tab-button" onclick="switchTab('life-events')">カスタマイズ</button>
-            <button class="tab-button" onclick="switchTab('result')">シミュレーション結果</button>
-            <button class="tab-button" onclick="switchTab('data-settings')">データ管理</button>
+        <!-- 🌊 Main Scrollable Area -->
+        <main class="main-scroll-area">
 
-            <button type="button" id="simulate-btn" class="update-btn">
-                <span>🔄</span> 更新実行
+            <!-- Tab 1: 家族設定 (Family) -->
+            <section id="tab-family" class="tab-content active">
+                <div class="category-card">
+                    <div class="card-header">
+                        <h2><svg class="svg-icon lg" viewBox="0 0 24 24">
+                                <path
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg> 家族設定</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="segmented-control">
+                            <label class="segment-item"><input type="radio" name="marital-status"
+                                    value="single"><span>独身</span></label>
+                            <label class="segment-item" data-version-required="PRO"><input type="radio"
+                                    name="marital-status" value="married" checked><span>既婚</span></label>
+                        </div>
+                        <div class="profile-stack">
+                            <div class="profile-item" id="self-profile-unit">
+                                <div class="profile-label"><svg class="svg-icon" viewBox="0 0 24 24">
+                                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg> 本人情報</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="age-self" value="35"><span
+                                                class="m-unit">歳</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>手取り年収</label>
+                                        <div class="m-input-wrapper"><input type="number" id="income-self"
+                                                value="500"><span class="m-unit">万</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>退職年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="retirement-age"
+                                                value="65"><span class="m-unit">歳</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>退職金</label>
+                                        <div class="m-input-wrapper"><input type="number" id="retirement-allowance"
+                                                value="1500"><span class="m-unit">万</span></div>
+                                    </div>
+                                    <div class="m-input-group full">
+                                        <label>生存目標年齢 <span class="help-icon"
+                                                data-help="シミュレーションを何歳まで表示するかを設定します。長生きのリスク（資産寿命）を確認するために、少し長め（90〜100歳）に設定することをお勧めします。">!</span></label>
+                                        <div class="m-input-wrapper">
+                                            <input type="number" id="simulation-end-age" value="85">
+                                            <span class="m-unit">歳までシミュレート</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="profile-item" id="spouse-profile-unit">
+                                <div class="profile-label"><svg class="svg-icon" viewBox="0 0 24 24">
+                                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg> 配偶者情報</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="age-spouse"
+                                                value="33"><span class="m-unit">歳</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>手取り年収</label>
+                                        <div class="m-input-wrapper"><input type="number" id="income-spouse"
+                                                value="100"><span class="m-unit">万</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>退職年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="retirement-age-spouse"
+                                                value="65"><span class="m-unit">歳</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>退職金</label>
+                                        <div class="m-input-wrapper"><input type="number"
+                                                id="retirement-allowance-spouse" value="0"><span class="m-unit">万</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="child-toggle-area" style="margin-top:20px;">
+                            <label class="m-label-inline">子供の数</label>
+                            <div class="radio-pill-group">
+                                <label class="pill-item"><input type="radio" name="child-count"
+                                        value="0"><span>0</span></label>
+                                <label class="pill-item" data-version-required="PRO"><input type="radio"
+                                        name="child-count" value="1" checked><span>1</span></label>
+                                <label class="pill-item" data-version-required="PRO"><input type="radio"
+                                        name="child-count" value="2"><span>2</span></label>
+                                <label class="pill-item" data-version-required="PRO"><input type="radio"
+                                        name="child-count" value="3"><span>3</span></label>
+                            </div>
+                        </div>
+                        <div id="children-ages" class="m-child-grid">
+                            <div class="m-child-card" id="child-1-group">
+                                <div class="m-child-header">第1子</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>誕生年度</label>
+                                        <div class="m-input-wrapper"><input type="number" id="birth-year-child-1"
+                                                value="2021"></div>
+                                    </div>
+                                    <div class="m-input-group"><label>教育コース</label>
+                                        <div class="m-input-wrapper"><select id="course-child-1" class="m-select">
+                                                <option value="all_public">公立コース</option>
+                                                <option value="all_private_arts">私大文系</option>
+                                                <option value="all_private_science">私大理系</option>
+                                                <option value="all_private_medical">私大医歯薬</option>
+                                            </select></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="m-child-card" id="child-2-group" style="display:none;">
+                                <div class="m-child-header">第2子</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>誕生年度</label>
+                                        <div class="m-input-wrapper"><input type="number" id="birth-year-child-2"
+                                                placeholder="2023"></div>
+                                    </div>
+                                    <div class="m-input-group"><label>教育コース</label>
+                                        <div class="m-input-wrapper"><select id="course-child-2" class="m-select">
+                                                <option value="all_public">公立コース</option>
+                                                <option value="all_private_arts">私大文系</option>
+                                                <option value="all_private_science">私大理系</option>
+                                                <option value="all_private_medical">私大医歯薬</option>
+                                            </select></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="m-child-card" id="child-3-group" style="display:none;">
+                                <div class="m-child-header">第3子</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>誕生年度</label>
+                                        <div class="m-input-wrapper"><input type="number" id="birth-year-child-3"
+                                                placeholder="2026"></div>
+                                    </div>
+                                    <div class="m-input-group"><label>教育コース</label>
+                                        <div class="m-input-wrapper"><select id="course-child-3" class="m-select">
+                                                <option value="all_public">公立コース</option>
+                                                <option value="all_private_arts">私大文系</option>
+                                                <option value="all_private_science">私大理系</option>
+                                                <option value="all_private_medical">私大医歯薬</option>
+                                            </select></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 2: 支出設定 (Expenses) -->
+            <section id="tab-expenses" class="tab-content">
+                <div class="category-card">
+                    <div class="card-header">
+                        <h2><svg class="svg-icon lg" viewBox="0 0 24 24">
+                                <path
+                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg> 支出設定</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="m-input-group full">
+                            <label>基本生活費 <small>(年額)</small></label>
+                            <div class="m-input-wrapper"><input type="number" id="annual-expenses" value="300"><span
+                                    class="m-unit">万円</span></div>
+                        </div>
+                        <div class="m-sub-card">
+                            <div class="child-toggle-area">
+                                <label class="m-label-inline"><svg class='svg-icon' viewBox='0 0 24 24'>
+                                        <path
+                                            d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' />
+                                    </svg> 住宅方針</label>
+                                <div class="radio-pill-group">
+                                    <label class="pill-item"><input type="radio" name="housing-strategy" value="rental"
+                                            checked><span>賃貸</span></label>
+                                    <label class="pill-item" data-version-required="PRO"><input type="radio"
+                                            name="housing-strategy" value="already_owned"><span>持家</span></label>
+                                    <label class="pill-item" data-version-required="PRO"><input type="radio"
+                                            name="housing-strategy" value="buy_future"><span>購入</span></label>
+                                </div>
+                            </div>
+                            <div id="housing-details-container" style="display: none; margin-top: 16px;">
+                                <div id="housing-rental-fields" style="display: none;">
+                                    <div class="m-input-group"><label>家賃 (月額)</label>
+                                        <div class="m-input-wrapper"><input type="number" id="rent-monthly"
+                                                value="10"><span class="m-unit">万円</span></div>
+                                    </div>
+                                </div>
+                                <div id="housing-owned-fields" style="display: none;">
+                                    <div class="input-row-grid">
+                                        <div class="m-input-group"><label>ローン返済</label>
+                                            <div class="m-input-wrapper"><input type="number" id="mortgage-monthly"
+                                                    value="12"></div>
+                                        </div>
+                                        <div class="m-input-group"><label>完済年齢</label>
+                                            <div class="m-input-wrapper"><input type="number" id="mortgage-end-age"
+                                                    value="65"></div>
+                                        </div>
+                                    </div>
+                                    <div class="m-input-group full"><label>修繕費・固定資産税 (年)</label>
+                                        <div class="m-input-wrapper"><input type="number" id="house-maintenance-annual"
+                                                value="30"><span class="m-unit">万円</span></div>
+                                    </div>
+                                </div>
+                                <div id="housing-future-fields" style="display: none;">
+                                    <div class="input-row-grid">
+                                        <div class="m-input-group"><label>購入年齢</label>
+                                            <div class="m-input-wrapper"><input type="number" id="buy-age"
+                                                    value="35"><span class="m-unit">歳</span></div>
+                                        </div>
+                                        <div class="m-input-group"><label>購入価格</label>
+                                            <div class="m-input-wrapper"><input type="number" id="buy-price"
+                                                    value="5000"><span class="m-unit">万円</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="input-row-grid" style="margin-top:8px;">
+                                        <div class="m-input-group"><label>頭金</label>
+                                            <div class="m-input-wrapper"><input type="number" id="buy-downpayment"
+                                                    value="500"><span class="m-unit">万</span></div>
+                                        </div>
+                                        <div class="m-input-group"><label>ローン期間</label>
+                                            <div class="m-input-wrapper"><input type="number" id="buy-loan-term"
+                                                    value="35"><span class="m-unit">年</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="input-row-grid" style="margin-top:8px;">
+                                        <div class="m-input-group"><label>ローン金利</label>
+                                            <div class="m-input-wrapper"><input type="number" id="buy-loan-rate"
+                                                    value="1.0" step="0.1"><span class="m-unit">%</span></div>
+                                        </div>
+                                        <div class="m-input-group"><label>購入迄の家賃</label>
+                                            <div class="m-input-wrapper"><input type="number" id="buy-rent-current"
+                                                    value="10"><span class="m-unit">万</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="m-sub-card" style="margin-top:16px;">
+                            <div class="child-toggle-area"><label class="m-label-inline">車両保有</label>
+                                <div class="radio-pill-group"><label class="pill-item"><input type="radio"
+                                            name="car-count" value="0"><span>0</span></label><label class="pill-item"
+                                        data-version-required="PRO"><input type="radio" name="car-count" value="1"
+                                            checked><span>1</span></label><label class="pill-item"
+                                        data-version-required="PRO"><input type="radio" name="car-count"
+                                            value="2"><span>2</span></label></div>
+                            </div>
+                            <div id="car-1-details" style="display:none; margin-top:12px;">
+                                <div class="m-sub-title">1台目</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>購入価格</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-1-price"
+                                                value="300"><span class="m-unit">万円</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>次回年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-1-next-age"
+                                                value="40"><span class="m-unit">歳</span></div>
+                                    </div>
+                                </div>
+                                <div class="input-row-grid" style="margin-top:8px;">
+                                    <div class="m-input-group"><label>サイクル</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-1-cycle"
+                                                value="10"><span class="m-unit">年</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>最終年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-1-end-age"
+                                                value="75"><span class="m-unit">歳</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="car-2-details" style="display:none; margin-top:12px;">
+                                <div class="m-sub-title">2台目</div>
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>購入価格</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-2-price"
+                                                value="150"><span class="m-unit">万円</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>次回年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-2-next-age"
+                                                value="45"><span class="m-unit">歳</span></div>
+                                    </div>
+                                </div>
+                                <div class="input-row-grid" style="margin-top:8px;">
+                                    <div class="m-input-group"><label>サイクル</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-2-cycle"
+                                                value="10"><span class="m-unit">年</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>最終年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="car-2-end-age"
+                                                value="70"><span class="m-unit">歳</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="life-events-container" style="margin-top:16px;"></div>
+                        <button type="button" id="add-event-btn" class="m-secondary-btn" style="margin-top:12px;">+
+                            ライフイベントを追加</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 3: 資産運用 (Investments) -->
+            <section id="tab-investments" class="tab-content">
+                <div class="category-card">
+                    <div class="card-header">
+                        <h2><svg class="svg-icon lg" viewBox="0 0 24 24">
+                                <path d="M23 6l-9.5 9.5-5-5L1 18" />
+                                <path d="M17 6h6v6" />
+                            </svg> 運用設定</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-row-grid">
+                            <div class="m-input-group"><label>現預金</label>
+                                <div class="m-input-wrapper"><input type="number" id="initial-cash" value="300"><span
+                                        class="m-unit">万</span></div>
+                            </div>
+                            <div class="m-input-group"><label>積立額</label>
+                                <div class="m-input-wrapper"><input type="number" id="annual-investment-cap"
+                                        value="10"><span class="m-unit">万/月</span></div>
+                            </div>
+                        </div>
+                        <div class="m-input-group full" style="margin-top:12px;"><label>投資元本</label>
+                            <div class="m-input-wrapper"><input type="number" id="initial-investment" value="200"><span
+                                    class="m-unit">万円</span></div>
+                        </div>
+
+                        <div class="m-sub-card" style="margin-top:20px; padding:16px;">
+                            <div class="input-row-grid">
+                                <div class="m-input-group"><label>期待利回り</label>
+                                    <div class="m-input-wrapper"><input type="number" id="return-rate" value="5.0"
+                                            step="0.1"><span class="m-unit">%</span></div>
+                                </div>
+                                <div class="m-input-group">
+                                    <label>表示モード <span class="help-icon"
+                                            data-help="「固定」は毎年一定の利回り、「変動」は市場の波を考慮した現実的なシミュレーションを行います。">!</span></label>
+                                    <div class="segmented-control mode-selector" style="margin:0; padding:2px;"><label
+                                            class="segment-item"><input type="radio" name="yield-mode-radio"
+                                                value="fixed" checked><span
+                                                style="padding:4px; font-size:0.75rem;">固定</span></label><label
+                                            class="segment-item"><input type="radio" name="yield-mode-radio"
+                                                value="variable"><span
+                                                style="padding:4px; font-size:0.75rem;">変動</span></label></div>
+                                </div>
+                            </div>
+                            <div id="common-investment-row" style="margin-top:12px;" class="input-row-grid">
+                                <div class="m-input-group"><label>インフレ率</label>
+                                    <div class="m-input-wrapper"><input type="number" id="inflation-rate" value="0.0"
+                                            step="0.1"><span class="m-unit">%</span></div>
+                                </div>
+                                <div id="emergency-fund-unit" class="m-input-group"><label>防衛資金 <span class="help-icon"
+                                            data-help="急な支出や収入減に備えて、常に手元に残しておくべき現金の目安です（通常は生活費の6ヶ月分程度）。">!</span></label>
+                                    <div class="m-input-wrapper"><input type="number" id="emergency-fund-months"
+                                            value="6"><span class="m-unit">ヶ月</span></div>
+                                </div>
+                            </div>
+                            <div id="volatility-row" style="display:none; margin-top:12px;" class="input-row-grid">
+                                <div class="m-input-group full"><label>ボラティリティ</label>
+                                    <div class="m-input-wrapper"><input type="number" id="return-volatility"
+                                            value="15.0" step="0.1"><span class="m-unit">%</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="glide-path-row" style="margin-top:16px;">
+                            <label class="settings-toggle">
+                                <input type="checkbox" id="glide-path">
+                                <span class="toggle-label"><svg class="svg-icon sm" viewBox="0 0 24 24">
+                                        <path
+                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg> キャッシュクッション <span class="help-icon"
+                                        data-help="退職直前に暴落が起きた際、安値で資産を売らなくて済むよう、あらかじめ数年分の生活費を現金化しておく戦略です。">!</span></span>
+                            </label>
+                            <div id="glide-settings" class="m-glide-sub-settings"
+                                style="display:none; margin-top:12px; padding:16px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+                                <div class="input-row-grid">
+                                    <div class="m-input-group"><label>目標確保額 <span class="help-icon"
+                                                data-help="キャッシュクッションとして用意する現金の総額です。生活費の3〜5年分程度を確保するのが一般的です。">!</span></label>
+                                        <div class="m-input-wrapper"><input type="number" id="glide-target-amount"
+                                                value="1000"><span class="m-unit">万円</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>開始年齢</label>
+                                        <div class="m-input-wrapper"><input type="number" id="glide-start-age"
+                                                value="60"><span class="m-unit">歳</span></div>
+                                    </div>
+                                    <div class="m-input-group"><label>完了までの期間</label>
+                                        <div class="m-input-wrapper"><input type="number" id="glide-duration"
+                                                value="5"><span class="m-unit">年間</span></div>
+                                    </div>
+                                </div>
+                                <p
+                                    style="font-size:0.7rem; color:#ef4444; font-weight: bold; margin-top:12px; border-top:1px solid #f1f5f9; padding-top:8px;">
+                                    ※資産売却時には一律5%の費用（税金・手数料相当）が発生します。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 4: 診断結果 (Diagnosis) -->
+            <section id="tab-diagnosis" class="tab-content">
+                <div class="chart-box card-box" id="main-chart-container" style="margin-bottom:16px;">
+                    <div class="chart-header-actions">
+                        <button class="expand-trigger-btn" onclick="toggleFullscreenChart()" title="全画面表示">
+                            <svg class="svg-icon" viewBox="0 0 24 24">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="canvas-holder"><canvas id="assetChart"></canvas></div>
+                </div>
+                <div class="summary-grid-4" style="margin-bottom:16px;">
+                    <div class="summary-card" id="card-final">
+                        <div class="summary-card-label"><span id="summary-end-age-label">100</span>歳 最終資産</div>
+                        <div class="summary-card-value" id="summary-final-assets">--</div>
+                        <div class="summary-card-unit">万円</div>
+                    </div>
+                    <div class="summary-card danger" id="empty-year-card">
+                        <div class="summary-card-label">資産枯渇年齢</div>
+                        <div class="summary-card-value" id="summary-empty-year">--</div>
+                        <div class="summary-card-unit">歳</div>
+                    </div>
+                </div>
+                <div class="diagnosis-card" id="result-section">
+                    <div class="mc-survival-indicator">
+                        <div class="survival-ring-container">
+                            <svg class="survival-ring-svg" viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#e2e8f0" stroke-width="3"></circle>
+                                <circle id="survival-progress-ring" cx="18" cy="18" r="16" fill="none"
+                                    stroke="var(--primary-color)" stroke-width="3" stroke-dasharray="100, 100"
+                                    stroke-linecap="round"></circle>
+                            </svg>
+                            <div class="survival-ring-text">
+                                <span id="survival-score" class="survival-ring-score">--</span>
+                                <span class="survival-ring-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="survival-info">
+                            <div id="survival-title" class="survival-title">分析中...</div>
+                            <div id="survival-subtitle" class="survival-subtitle">シミュレーションを更新して診断結果を表示します。</div>
+                        </div>
+                    </div>
+                    <div id="analysis-text"></div>
+                    <div class="mc-report-card">
+                        <div class="mc-card-title">
+                            <svg class="svg-icon sm" viewBox="0 0 24 24">
+                                <path
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            年齢別生存確率
+                        </div>
+                        <div id="mc-age-bars-container" class="mc-age-bars">
+                            <!-- JS injected bars -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden Compatibility Fields -->
+                <div style="display:none;"><input type="number" id="zoom-start" value="30"><input type="number"
+                        id="zoom-end" value="100"><span id="zoom-range-label"></span></div>
+            </section>
+
+        </main>
+
+
+        <!-- ⚓ Bottom Navigation -->
+        <nav class="tab-bar">
+            <button class="tab-item active" data-tab="tab-family">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span class="tab-label">家族設定</span>
             </button>
+            <button class="tab-item" data-tab="tab-expenses">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                <span class="tab-label">支出設定</span>
+            </button>
+            <button class="tab-item" data-tab="tab-investments">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M23 6l-9.5 9.5-5-5L1 18" />
+                    <path d="M17 6h6v6" />
+                </svg>
+                <span class="tab-label">資産運用</span>
+            </button>
+            <button class="tab-item" data-tab="tab-diagnosis">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span class="tab-label">診断結果</span>
+            </button>
+        </nav>
+
+        <!-- 📺 Fullscreen Modal -->
+        <div id="chart-modal" class="fullscreen-modal">
+            <div class="modal-content">
+                <div class="modal-header-premium-compact">
+                    <div class="hud-ticker-area">
+                        <div id="fullscreen-year-hud" class="hud-time-info">--年 --歳</div>
+                        <div class="hud-metrics-ticker">
+                            <div class="ticker-item"><span class="lbl">収入</span><span id="hud-val-income"
+                                    class="val">--</span></div>
+                            <div class="ticker-item"><span class="lbl">支出</span><span id="hud-val-expense"
+                                    class="val">--</span></div>
+                            <div class="ticker-item"><span class="lbl">預金</span><span id="hud-val-cash"
+                                    class="val">--</span></div>
+                            <div class="ticker-item"><span class="lbl">投資</span><span id="hud-val-inv"
+                                    class="val">--</span></div>
+                            <div class="ticker-item highlight"><span class="lbl">合計</span><span id="hud-val-total"
+                                    class="val">--</span></div>
+                        </div>
+                    </div>
+                    <div class="modal-actions-top">
+                        <button class="premium-icon-btn reset-btn" id="reset-zoom-btn" title="リセット">
+                            <svg class="svg-icon sm" viewBox="0 0 24 24">
+                                <path
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                        <button class="premium-icon-btn close-btn" onclick="toggleFullscreenChart()" title="閉じる">
+                            <svg class="svg-icon sm" viewBox="0 0 24 24">
+                                <path d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-body-wrapper">
+                    <canvas id="assetChart-fullscreen"></canvas>
+                </div>
+            </div>
         </div>
 
-        <div id="tab-input" class="tab-content active">
-            <form class="simulation-form">
-                <!-- 基本情報セクション -->
-                <section class="form-section">
-                    <h2><i class="icon">👤</i> 基本情報 & ライフスタイル</h2>
-
-                    <div class="input-grid-row">
-                        <div class="input-group">
-                            <label for="age-self">現在の年齢（本人）</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="age-self" placeholder="35" min="0" max="100" value="30">
-                                <span class="unit">歳</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="marital-status">配偶者の有無</label>
-                            <select id="marital-status">
-                                <option value="single">独身</option>
-                                <option value="married" selected>既婚（配偶者あり）</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="input-grid-row">
-                        <div class="input-group">
-                            <label for="housing-status">現在の住まい</label>
-                            <select id="housing-status">
-                                <option value="rental">賃貸</option>
-                                <option value="owned_house">持ち家（戸建て）</option>
-                                <option value="owned_condo">持ち家（マンション）</option>
-                                <option value="company">社宅・寮</option>
-                            </select>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="family-care">将来の介護懸念（親族）</label>
-                            <select id="family-care">
-                                <option value="none">特になし</option>
-                                <option value="possible_5y">5年以内に可能性あり</option>
-                                <option value="possible_10y">10年以内に可能性あり</option>
-                                <option value="likely">強く懸念している</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 住宅取得プラン (Phase 15) -->
-                <section class="form-section">
-                    <h2><i class="icon">🏠</i> 今後の住宅プラン <span class="help-icon"
-                            data-help="将来の住まいについての方針を選択してください。<br>AI提案の際に、この方針に基づいたイベント（頭金・修繕費・更新料など）が提案されます。">?</span>
-                    </h2>
-
-                    <div class="radio-card-group">
-                        <label class="radio-card">
-                            <input type="radio" name="housing-strategy" value="rental" checked>
-                            <div class="card-content">
-                                <span class="card-icon">🏢</span>
-                                <span class="card-title">ずっと賃貸</span>
-                                <span class="card-desc">更新料や住み替えを想定</span>
-                            </div>
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="housing-strategy" value="buy_house">
-                            <div class="card-content">
-                                <span class="card-icon">🏡</span>
-                                <span class="card-title">戸建て購入</span>
-                                <span class="card-desc">頭金・ローン・修繕費</span>
-                            </div>
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="housing-strategy" value="buy_condo">
-                            <div class="card-content">
-                                <span class="card-icon">🏙️</span>
-                                <span class="card-title">マンション購入</span>
-                                <span class="card-desc">管理費・積立金を考慮</span>
-                            </div>
-                        </label>
-                    </div>
-                </section>
-
-                <!-- 家族構成セクション -->
-                <section class="form-section">
-                    <h2><i class="icon">👨‍👩‍👧‍👦</i> 家族構成（子供）</h2>
-                    <div class="input-grid-row">
-                        <div class="input-group">
-                            <label>子供の人数 (現在)</label>
-                            <select id="child-count">
-                                <option value="0">0人</option>
-                                <option value="1">1人</option>
-                                <option value="2">2人</option>
-                                <option value="3">3人</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>今後の子供プラン <span class="help-icon"
-                                    data-help="これからの家族計画を選択してください。AIが教育費や養育費の発生を予測します。">?</span></label>
-                            <select id="future-children-plan">
-                                <option value="none">これ以上予定なし</option>
-                                <option value="1">あと1人欲しい</option>
-                                <option value="2">あと2人欲しい</option>
-                                <option value="3">あと3人欲しい</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="children-ages">
-                        <div class="input-group" id="child-1-group" style="display: none;">
-                            <label for="age-child-1">第1子の年齢</label>
-                            <input type="number" id="age-child-1" placeholder="例: 5" min="0" max="30">
-                            <select id="course-child-1" style="margin-top: 5px;">
-                                <option value="all_private">すべて私立（デフォルト）</option>
-                                <option value="public_high_private_uni">高校まで公立・大学私立</option>
-                                <option value="all_public">すべて公立</option>
-                            </select>
-                        </div>
-                        <div class="input-group" id="child-2-group" style="display: none;">
-                            <label for="age-child-2">第2子の年齢</label>
-                            <input type="number" id="age-child-2" placeholder="例: 2" min="0" max="30">
-                            <select id="course-child-2" style="margin-top: 5px;">
-                                <option value="all_private">すべて私立（デフォルト）</option>
-                                <option value="public_high_private_uni">高校まで公立・大学私立</option>
-                                <option value="all_public">すべて公立</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 資産・家計セクション -->
-                <section class="form-section">
-                    <h2><i class="icon">💰</i> 資産・家計</h2>
-
-                    <div class="input-grid-row">
-                        <div class="input-group">
-                            <label for="household-income">世帯年収（手取り）</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="household-income" placeholder="600" min="0" step="10"
-                                    value="600">
-                                <span class="unit">万円</span>
-                            </div>
-                            <span class="annotation">※ボーナス込みの総額</span>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="annual-expenses">年間支出（概算）</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="annual-expenses" placeholder="450" min="0" step="10"
-                                    value="400">
-                                <span class="unit">万円</span>
-                            </div>
-                            <span class="annotation">※基本生活費 + 住居費 + 教育費など</span>
-                        </div>
-                    </div>
-
-                    <div class="input-grid-row">
-                        <div class="input-group">
-                            <label for="initial-cash">初期・現預金</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="initial-cash" placeholder="300" min="0" step="10" value="300">
-                                <span class="unit">万円</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="initial-investment">初期・投資資産</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="initial-investment" placeholder="200" min="0" step="10"
-                                    value="200">
-                                <span class="unit">万円</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- シミュレーション前提 -->
-                <section class="form-section">
-                    <h2><i class="icon">📈</i> シミュレーション前提</h2>
-
-                    <div class="input-grid-row three-col">
-                        <div class="input-group">
-                            <label for="annual-investment-cap">年間投資上限</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="annual-investment-cap" placeholder="120" min="0" step="10"
-                                    value="120">
-                                <span class="unit">万円</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="return-rate">想定利回り (%)</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="return-rate" placeholder="3.0" step="0.1" min="0" value="3.0">
-                                <span class="unit">%</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="retirement-age">定年退職の年齢</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="retirement-age" placeholder="65" min="60" max="75" value="65">
-                                <span class="unit">歳</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="retirement-allowance">退職金見込額</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="retirement-allowance" placeholder="1000" min="0" step="10"
-                                    value="1000">
-                                <span class="unit">万円</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Phase 25: Extended Risks -->
-                    <div style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px;">
-                        <div class="input-grid-row">
-                            <div class="input-group">
-                                <label>自家用車の保有</label>
-                                <select id="car-ownership">
-                                    <option value="none">なし</option>
-                                    <option value="1_k">軽1台 (予算150万/10年)</option>
-                                    <option value="1_normal">普通車1台 (予算300万/10年)</option>
-                                    <option value="1_luxury">高級車1台 (予算600万/10年)</option>
-                                    <option value="2_mix">2台持ち (普通+軽)</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <label>実家の状況 (相続・介護)</label>
-                                <select id="parents-home">
-                                    <option value="unknown">不明/考慮しない</option>
-                                    <option value="owned_safe">持ち家 (資産価値あり)</option>
-                                    <option value="owned_risk">持ち家 (空き家リスクあり)</option>
-                                    <option value="rental">賃貸 (親の住居費支援の可能性)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+        <!-- 💁 Help Modal -->
+        <div id="help-modal" class="modal-overlay">
+            <div class="modal-content info-popup">
+                <h3 class="modal-title">ヒント</h3>
+                <p id="help-text" class="modal-text"></p>
+                <button class="m-modal-close-btn" onclick="UI.closeHelpModal()">閉じる</button>
+            </div>
         </div>
-        <span class="annotation"
-            style="margin-top: -10px; display: block; margin-bottom: 10px;">※黒字分は上限まで投資に回し、残りは現預金となります。</span>
-        </section>
-        </form>
-    </div>
 
-    <div id="tab-life-events" class="tab-content">
-        <!-- ライフイベントセクション -->
-        <section class="form-section">
-            <h2><i class="icon">📅</i> ライフイベント (収支変動)</h2>
-
-            <!-- AI Proposal Section -->
-            <div class="api-section">
-                <div class="api-header">
-                    <label for="gemini-api-key" class="api-label">Google Gemini API Key <span class="help-icon"
-                            data-help="Google AI Studioで取得できるAPIキーを入力してください。<br>安全のため、入力されたキーはブラウザ内に保存されず、再読み込みでクリアされます。<br><a href='https://aistudio.google.com/' target='_blank'>APIキーの取得はこちら</a>">?</span></label>
-                </div>
-                <div class="api-input-row">
-                    <input type="password" id="gemini-api-key" class="large-input"
-                        placeholder="APIキーを入力 (AI Studioで取得)">
-                    <button type="button" id="ai-propose-btn" class="ai-btn">
-                        <span class="btn-icon">✨</span> AI提案
-                    </button>
-                </div>
-                <div id="ai-loading" style="display:none; color:#2980b9; font-weight:bold; margin-top:10px;">
-                    <span class="spinner">↻</span> AIが思考中...
-                </div>
-                <div id="ai-error"
-                    style="display:none; color:#c0392b; font-weight:bold; margin-top:10px; font-size:0.9rem;"></div>
-            </div>
-
-            <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
-                <h3 style="margin:0; font-size:1.1rem;">イベントリスト</h3>
-                <span class="help-icon"
-                    data-help="特定の年齢での収入・支出の増減を設定できます。<br>例: 65歳から住宅ローン完済で支出減、など。<br>リストは自動で年齢順にソートされます。">?</span>
-            </div>
-
-
-            <div id="life-events-container">
-                <!-- イベント行がここに追加されます -->
-            </div>
-
-            <button type="button" id="add-event-btn" class="secondary-btn" style="margin-top: 10px;">+
-                イベントを追加</button>
-        </section>
-        <button type="button" class="primary-btn" onclick="switchTab('result'); runSimulation();"
-            style="margin-top: 20px;">シミュレーション実行</button>
-    </div>
-
-    <div id="tab-result" class="tab-content">
-        <!-- 結果表示セクション -->
-        <section id="result-section" style="display: none; margin-top: 40px;">
-            <header style="border-bottom: none; margin-bottom: 20px;">
-                <h2>シミュレーション結果</h2>
-                <p>100歳までの資産推移</p>
-            </header>
-
-            <div class="chart-container" style="position: relative; height:40vh; width:100%; margin-bottom: 20px;">
-                <canvas id="assetChart"></canvas>
-            </div>
-
-            <!-- 破産アラートエリア -->
-            <div id="bankruptcy-alert" style="display: none;"></div>
-
-            <div class="table-container">
-                <table id="result-table">
-                    <thead>
-                        <tr>
-                            <th>年齢</th>
-                            <th>収入</th>
-                            <th>支出</th>
-                            <th>運用益</th>
-                            <th>現預金</th>
-                            <th>投資資産</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- JSで行を追加 -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- 教育費内訳セクション -->
-            <div id="education-cost-section" style="margin-top: 40px; display: none;">
-                <h3>🎓 教育費内訳</h3>
-                <div class="table-container">
-                    <table id="education-cost-table">
-                        <thead>
-                            <tr>
-                                <th>西暦</th>
-                                <th>第1子<br>(年齢)</th>
-                                <th>教育費</th>
-                                <th>第2子<br>(年齢)</th>
-                                <th>教育費</th>
-                                <th>合計</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- JSで行を追加 -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </div>
-    <div id="tab-data-settings" class="tab-content">
-        <section class="form-section">
-            <h2><i class="icon">💾</i> データ管理</h2>
-            <p style="margin-bottom: 20px; color: #666;">
-                入力データをブラウザに保存したり、ファイルとして書き出すことができます。<br>
-                <strong style="color: #e74c3c;">※APIキーは保存・出力されません。</strong>
-            </p>
-
-            <div class="input-grid-row">
-                <div class="input-group">
-                    <label>ブラウザ保存 (LocalStorage)</label>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" id="save-local-btn" class="primary-btn"
-                            style="margin-top:0; background:#3498db;">ブラウザに保存</button>
-                        <button type="button" id="load-local-btn" class="secondary-btn"
-                            style="margin-top:0;">読み込み</button>
-                        <button type="button" id="clear-local-btn" class="secondary-btn"
-                            style="margin-top:0; background:#e74c3c; color:white;">削除</button>
-                    </div>
-                    <span class="annotation">現在のブラウザにデータを一時保存します。</span>
-                </div>
-
-                <div class="input-group">
-                    <label>ファイル操作 (JSON)</label>
-                    <div style="display: flex; gap: 10px; flex-direction: column;">
-                        <button type="button" id="export-file-btn" class="primary-btn"
-                            style="margin-top:0; background:#27ae60;">ファイルに書き出し</button>
-
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="file" id="import-file-input" accept=".json" style="display: none;">
-                            <button type="button" id="import-file-btn" class="secondary-btn"
-                                style="margin-top:0;">ファイルから読み込み</button>
-                        </div>
-                    </div>
-                    <span class="annotation">PC/スマホのストレージにデータを保存・復元します。</span>
-                </div>
-            </div>
-        </section>
-    </div>
-    </div>
-
-    <script>
-        // 子供の人数に応じて入力欄を表示/非表示にする簡易スクリプト
-        document.getElementById('child-count').addEventListener('change', function () {
-            const count = parseInt(this.value);
-            document.getElementById('child-1-group').style.display = count >= 1 ? 'block' : 'none';
-            document.getElementById('child-2-group').style.display = count >= 2 ? 'block' : 'none';
-        });
-    </script>
-    <!-- Help Modal (Phase 17) -->
-    <div id="help-modal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <div id="help-modal-text"></div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+        <script src="config.js"></script>
+        <script src="logic.js"></script>
+        <script src="ui.js"></script>
+        <script src="chart.js"></script>
+        <script src="main.js"></script>
 </body>
 
 </html>
